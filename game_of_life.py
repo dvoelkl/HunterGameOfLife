@@ -4,15 +4,22 @@ import matplotlib.animation as animation
 import random
 from matplotlib.colors import ListedColormap
 
+# Parameters
 WORLD_SIZE = 125
 EPOCHS = 1000
-ALIVE = 1
-DEAD = 0
-HUNTER = 2
 HUNGER_LIMIT = 10
-init_p = [0.001, 0.4, 0.599]  # Probabilities for [HUNTER, ALIVE, DEAD]
-HUNTER_REPRO_RATE = 2
+init_p = [0.001, 0.2, 0.799]  # Probabilities for [HUNTER, ALIVE, DEAD]
+HUNTER_REPRO_RATE = 1
 CANIBALISM_INTERVAL = 3
+interpolation = 'nearest'
+
+# Celltypes
+DEAD = 0
+ALIVE = 1
+HUNTER = 2
+BORDER = 99
+
+
 
 world = np.random.choice([ALIVE, DEAD], size=(WORLD_SIZE, WORLD_SIZE), p=[0.5, 0.5])
 hunger_levels = np.zeros((WORLD_SIZE, WORLD_SIZE), dtype=int)
@@ -68,9 +75,9 @@ def eat_neighbors_and_reproduce_or_starve(world, hunger_levels, x, y):
             possible_positions = []
             possible_positions.append((x, y))
             for nx, ny in neighbors:   
-                if world[nx, ny] == DEAD: # Ensure no other hunter is already there
+                if world[nx, ny] == DEAD: # Ensure no other hunter and no border is already there
                     possible_positions.append((nx, ny))
-                if world[nx, ny] == HUNTER and hunger_levels[x, y] > HUNGER_LIMIT-CANIBALISM_INTERVAL:
+                elif world[nx, ny] == HUNTER and hunger_levels[x, y] > HUNGER_LIMIT-CANIBALISM_INTERVAL:
                     possible_positions = [(nx, ny)]
                     world[nx, ny] = DEAD
                     hunger_levels[x, y] = 0
@@ -110,6 +117,14 @@ def update(frame):
 if __name__ == '__main__':
     fig, ax = plt.subplots()
     world = np.random.choice([HUNTER, ALIVE, DEAD], size=(WORLD_SIZE, WORLD_SIZE), p=init_p)
+    #world = np.zeros((WORLD_SIZE, WORLD_SIZE), dtype=int)
+    np.fill_diagonal(world, ALIVE)
+    #fill reverse diagonal
+    np.fill_diagonal(np.fliplr(world), ALIVE)
+    world[25, :int(WORLD_SIZE/2)-25] = BORDER
+    world[25, int(WORLD_SIZE/2)+25:] = BORDER
+    world[-25, :int(WORLD_SIZE/2)-25] = BORDER
+    world[-25, int(WORLD_SIZE/2)+25:] = BORDER
     #world = np.random.choice([ALIVE, DEAD], size=(WORLD_SIZE, WORLD_SIZE), p=[0.2, 0.8])
     # set upper triagonal to hunters
     #for i in range(WORLD_SIZE):
@@ -126,8 +141,10 @@ if __name__ == '__main__':
         im.set_array(world)
         return [im]
     
-    cmap = ListedColormap(['white', 'green', 'red'])
-    im = ax.imshow(world, vmin=0, vmax=2, cmap=cmap, interpolation='bilinear')
+    cmap = ListedColormap(['white', 'green', 'red', 'black'])
+    im = ax.imshow(world, vmin=0, vmax=3, cmap=cmap, interpolation=interpolation)
     ani = animation.FuncAnimation(fig, update_world, frames=EPOCHS, interval=100, repeat=False)
+    
+    plt.show()
     
     plt.show()
